@@ -4,7 +4,7 @@ import puppeteer from "puppeteer";
 import { fileURLToPath } from "node:url";
 
 //__dirname: where this file is at.
-const pagesDir = path.resolve(__dirname, "../pages"); //returns path
+const pagesDir = path.resolve(__dirname, "../pages");
 
 const findMdxFiles = (dir: string): string[] => {
   const files = fs.readdirSync(dir);
@@ -27,7 +27,7 @@ const findMdxFiles = (dir: string): string[] => {
 let propertyOfTheFrontmatterForOgImage = "title";
 
 const mdxFiles = findMdxFiles(pagesDir);
-let firstOnesPath = mdxFiles[1];
+let firstOnesPath = mdxFiles[0];
 const mdxContent = fs.readFileSync(firstOnesPath, "utf8");
 let titleOfTheMdx = mdxContent
   .split("---", 2)
@@ -44,3 +44,37 @@ if (!titleOfTheMdx)
 console.log(titleOfTheMdx);
 
 // let frontmatterContent =
+
+(async () => {
+  const browser = await puppeteer.launch({
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+  //read the template to put the title on the page
+  const html = fs
+    .readFileSync(
+      "/home/nuuklu/Desktop/LearningByDoing/learningNodejs/createPngByFile/src/template.html",
+      "utf-8"
+    )
+    .toString()
+    .replace("@titleToShow", titleOfTheMdx!);
+  console.log(html);
+
+  const page = await browser.newPage();
+  await page.setContent(html);
+  await page.waitForNetworkIdle();
+  await page.setViewport({
+    width: 1200,
+    height: 630,
+  });
+
+  //ss the dynamically generated html page and save it.
+  await page.screenshot({
+    path: path.resolve(__dirname, `../public/ogImages/${Math.random()}.png`),
+    encoding: "binary",
+  });
+  await browser.close();
+})();
+
+// TODO: get all the title from mdx by loop
+// TODO: check if related png is already exist
+// TODO: if not exist then create the png
