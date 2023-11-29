@@ -34,35 +34,82 @@ const findMdxFiles = (dir) => {
     return mdxFiles;
 };
 let propertyOfTheFrontmatterForOgImage = "title";
-const mdxFiles = findMdxFiles(pagesDir);
-let firstOnesPath = mdxFiles[0];
-const mdxContent = fs_1.default.readFileSync(firstOnesPath, "utf8");
-let titleOfTheMdx = (_b = (_a = mdxContent
-    .split("---", 2)
-    .find((elem) => elem.includes(propertyOfTheFrontmatterForOgImage))) === null || _a === void 0 ? void 0 : _a.split("\n").find((elem) => elem.includes(propertyOfTheFrontmatterForOgImage))) === null || _b === void 0 ? void 0 : _b.split('"')[1];
-if (!titleOfTheMdx)
-    throw new Error(`there is no ${propertyOfTheFrontmatterForOgImage} at ${firstOnesPath}`);
-console.log(titleOfTheMdx);
+const mdxFilesPaths = findMdxFiles(pagesDir);
+for (const mdxFilePath of mdxFilesPaths) {
+    let fileNameOfThePng = mdxFilePath.split("/").at(-2);
+    const mdxContent = fs_1.default.readFileSync(mdxFilePath, "utf8");
+    let titleOfTheMdx = (_b = (_a = mdxContent
+        .split("---", 2)
+        .find((elem) => elem.includes(propertyOfTheFrontmatterForOgImage))) === null || _a === void 0 ? void 0 : _a.split("\n").find((elem) => elem.includes(propertyOfTheFrontmatterForOgImage))) === null || _b === void 0 ? void 0 : _b.split('"')[1];
+    if (!titleOfTheMdx)
+        throw new Error(`there is no ${propertyOfTheFrontmatterForOgImage} at ${mdxFilePath}`);
+    (() => __awaiter(void 0, void 0, void 0, function* () {
+        const browser = yield puppeteer_1.default.launch({
+            args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        });
+        //read the template to put the title on the page
+        const html = fs_1.default
+            .readFileSync("/home/nuuklu/Desktop/LearningByDoing/learningNodejs/createPngByFile/src/template.html", "utf-8")
+            .toString()
+            .replace("@titleToShow", titleOfTheMdx);
+        console.log(html);
+        const page = yield browser.newPage();
+        yield page.setContent(html);
+        yield page.waitForNetworkIdle();
+        yield page.setViewport({
+            width: 1200,
+            height: 630,
+        });
+        //ss the dynamically generated html page and save it.
+        yield page.screenshot({
+            path: path_1.default.resolve(__dirname, `../public/ogImages/${fileNameOfThePng}.png`),
+            encoding: "binary",
+        });
+        yield browser.close();
+    }))();
+}
+// let firstOnesPath = mdxFilesPaths[0];
+//get last folder name of the post. e.g: ../../bizedemimenu/index.mdx = bizedemimenu
+// let fileNameOfThePng = firstOnesPath.split("/").at(-2);
+// const mdxContent = fs.readFileSync(firstOnesPath, "utf8");
+// let titleOfTheMdx = mdxContent
+//   .split("---", 2)
+//   .find((elem) => elem.includes(propertyOfTheFrontmatterForOgImage))
+//   ?.split("\n")
+//   .find((elem) => elem.includes(propertyOfTheFrontmatterForOgImage))
+//   ?.split('"')[1];
+// if (!titleOfTheMdx)
+//   throw new Error(
+//     `there is no ${propertyOfTheFrontmatterForOgImage} at ${firstOnesPath}`
+//   );
 // let frontmatterContent =
-(() => __awaiter(void 0, void 0, void 0, function* () {
-    const browser = yield puppeteer_1.default.launch({
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
-    const html = fs_1.default
-        .readFileSync("/home/nuuklu/Desktop/LearningByDoing/learningNodejs/createPngByFile/src/template.html", "utf-8")
-        .toString()
-        .replace("@titleToShow", titleOfTheMdx);
-    console.log(html);
-    const page = yield browser.newPage();
-    yield page.setContent(html);
-    yield page.waitForNetworkIdle();
-    yield page.setViewport({
-        width: 1200,
-        height: 630,
-    });
-    yield page.screenshot({
-        path: path_1.default.resolve(__dirname, `../public/ogImages/${Math.random()}.png`),
-        encoding: "binary",
-    });
-    yield browser.close();
-}))();
+// (async () => {
+//   const browser = await puppeteer.launch({
+//     args: ["--no-sandbox", "--disable-setuid-sandbox"],
+//   });
+//   //read the template to put the title on the page
+//   const html = fs
+//     .readFileSync(
+//       "/home/nuuklu/Desktop/LearningByDoing/learningNodejs/createPngByFile/src/template.html",
+//       "utf-8"
+//     )
+//     .toString()
+//     .replace("@titleToShow", titleOfTheMdx!);
+//   console.log(html);
+//   const page = await browser.newPage();
+//   await page.setContent(html);
+//   await page.waitForNetworkIdle();
+//   await page.setViewport({
+//     width: 1200,
+//     height: 630,
+//   });
+//   //ss the dynamically generated html page and save it.
+//   await page.screenshot({
+//     path: path.resolve(__dirname, `../public/ogImages/${fileNameOfThePng}.png`),
+//     encoding: "binary",
+//   });
+//   await browser.close();
+// })();
+// TODO: get all the title from mdx by loop
+// TODO: check if related png is already exist
+// TODO: if not exist then create the png

@@ -26,55 +26,105 @@ const findMdxFiles = (dir: string): string[] => {
 
 let propertyOfTheFrontmatterForOgImage = "title";
 
-const mdxFiles = findMdxFiles(pagesDir);
-let firstOnesPath = mdxFiles[0];
-const mdxContent = fs.readFileSync(firstOnesPath, "utf8");
-let titleOfTheMdx = mdxContent
-  .split("---", 2)
-  .find((elem) => elem.includes(propertyOfTheFrontmatterForOgImage))
-  ?.split("\n")
-  .find((elem) => elem.includes(propertyOfTheFrontmatterForOgImage))
-  ?.split('"')[1];
+const mdxFilesPaths = findMdxFiles(pagesDir);
 
-if (!titleOfTheMdx)
-  throw new Error(
-    `there is no ${propertyOfTheFrontmatterForOgImage} at ${firstOnesPath}`
-  );
+for (const mdxFilePath of mdxFilesPaths) {
+  let fileNameOfThePng = mdxFilePath.split("/").at(-2);
+  const mdxContent = fs.readFileSync(mdxFilePath, "utf8");
+  let titleOfTheMdx = mdxContent
+    .split("---", 2)
+    .find((elem) => elem.includes(propertyOfTheFrontmatterForOgImage))
+    ?.split("\n")
+    .find((elem) => elem.includes(propertyOfTheFrontmatterForOgImage))
+    ?.split('"')[1];
 
-console.log(titleOfTheMdx);
+  if (!titleOfTheMdx)
+    throw new Error(
+      `there is no ${propertyOfTheFrontmatterForOgImage} at ${mdxFilePath}`
+    );
+
+  (async () => {
+    const browser = await puppeteer.launch({
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+    //read the template to put the title on the page
+    const html = fs
+      .readFileSync(
+        "/home/nuuklu/Desktop/LearningByDoing/learningNodejs/createPngByFile/src/template.html",
+        "utf-8"
+      )
+      .toString()
+      .replace("@titleToShow", titleOfTheMdx!);
+    console.log(html);
+
+    const page = await browser.newPage();
+    await page.setContent(html);
+    await page.waitForNetworkIdle();
+    await page.setViewport({
+      width: 1200,
+      height: 630,
+    });
+
+    //ss the dynamically generated html page and save it.
+    await page.screenshot({
+      path: path.resolve(
+        __dirname,
+        `../public/ogImages/${fileNameOfThePng}.png`
+      ),
+      encoding: "binary",
+    });
+    await browser.close();
+  })();
+}
+
+// let firstOnesPath = mdxFilesPaths[0];
+//get last folder name of the post. e.g: ../../bizedemimenu/index.mdx = bizedemimenu
+// let fileNameOfThePng = firstOnesPath.split("/").at(-2);
+// const mdxContent = fs.readFileSync(firstOnesPath, "utf8");
+// let titleOfTheMdx = mdxContent
+//   .split("---", 2)
+//   .find((elem) => elem.includes(propertyOfTheFrontmatterForOgImage))
+//   ?.split("\n")
+//   .find((elem) => elem.includes(propertyOfTheFrontmatterForOgImage))
+//   ?.split('"')[1];
+
+// if (!titleOfTheMdx)
+//   throw new Error(
+//     `there is no ${propertyOfTheFrontmatterForOgImage} at ${firstOnesPath}`
+//   );
 
 // let frontmatterContent =
 
-(async () => {
-  const browser = await puppeteer.launch({
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
-  //read the template to put the title on the page
-  const html = fs
-    .readFileSync(
-      "/home/nuuklu/Desktop/LearningByDoing/learningNodejs/createPngByFile/src/template.html",
-      "utf-8"
-    )
-    .toString()
-    .replace("@titleToShow", titleOfTheMdx!);
-  console.log(html);
+// (async () => {
+//   const browser = await puppeteer.launch({
+//     args: ["--no-sandbox", "--disable-setuid-sandbox"],
+//   });
+//   //read the template to put the title on the page
+//   const html = fs
+//     .readFileSync(
+//       "/home/nuuklu/Desktop/LearningByDoing/learningNodejs/createPngByFile/src/template.html",
+//       "utf-8"
+//     )
+//     .toString()
+//     .replace("@titleToShow", titleOfTheMdx!);
+//   console.log(html);
 
-  const page = await browser.newPage();
-  await page.setContent(html);
-  await page.waitForNetworkIdle();
-  await page.setViewport({
-    width: 1200,
-    height: 630,
-  });
+//   const page = await browser.newPage();
+//   await page.setContent(html);
+//   await page.waitForNetworkIdle();
+//   await page.setViewport({
+//     width: 1200,
+//     height: 630,
+//   });
 
-  //ss the dynamically generated html page and save it.
-  await page.screenshot({
-    path: path.resolve(__dirname, `../public/ogImages/${Math.random()}.png`),
-    encoding: "binary",
-  });
-  await browser.close();
-})();
+//   //ss the dynamically generated html page and save it.
+//   await page.screenshot({
+//     path: path.resolve(__dirname, `../public/ogImages/${fileNameOfThePng}.png`),
+//     encoding: "binary",
+//   });
+//   await browser.close();
+// })();
 
-// TODO: get all the title from mdx by loop
+// TODOne: get all the title from mdx by loop
 // TODO: check if related png is already exist
 // TODO: if not exist then create the png
