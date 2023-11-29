@@ -38,10 +38,19 @@ for (const mdxFilePath of mdxFilesPaths) {
     .find((elem) => elem.includes(propertyOfTheFrontmatterForOgImage))
     ?.split('"')[1];
 
+  //throw error if ther eis no title
   if (!titleOfTheMdx)
     throw new Error(
       `there is no ${propertyOfTheFrontmatterForOgImage} at ${mdxFilePath}`
     );
+
+  let filePathToSave = path.resolve(
+    __dirname,
+    `../public/ogImages/${fileNameOfThePng}.png`
+  );
+  // if (fs.existsSync(filePathToSave)) {
+  //   continue;
+  // }
 
   (async () => {
     const browser = await puppeteer.launch({
@@ -67,12 +76,16 @@ for (const mdxFilePath of mdxFilesPaths) {
 
     //ss the dynamically generated html page and save it.
     await page.screenshot({
-      path: path.resolve(
-        __dirname,
-        `../public/ogImages/${fileNameOfThePng}.png`
-      ),
+      path: filePathToSave,
       encoding: "binary",
     });
+    // await page.screenshot({
+    //   path: path.resolve(
+    //     __dirname,
+    //     `../public/ogImages/${fileNameOfThePng}.png`
+    //   ),
+    //   encoding: "binary",
+    // });
     await browser.close();
   })();
 }
